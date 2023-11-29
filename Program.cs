@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -11,28 +12,34 @@ namespace First_Playable_Map
     internal class Program
     {
         //Map Int and Var
-        static string path;
+        //static string path = @"Map.txt";
         static char[] mapFloor;
         static char[,] mapText;
-        static char mapwalls = ((char)248);
+        static char mapWalls = ((char)248);
+        static char mapGround = ((char)247);
         static int mapHeight;
         static int mapWidth;
+        static string path;
+        static string path1 = @"Map.text";
         //Player
+        static char player = ((char)246);
         static int playerX, playerY;
         static int playerDamage;
         static int playerHP;
         static int playerHealth;
         //Enemies
+        static char enemy1 = ((char)255);
+        static int enemy1X, enemy1Y;
+        static char enemy2 = ((char)254);
         static int enemyHP;
         static int enemy1basicHP;
         static int enemy2tankHP;
 
-        static string path = path1;
-        static string path1 = @"Map.txt";
-        static string[] MapArrays;
+
         static void Main(string[] args)
         {
-            DisplayMap();
+            LauncherManager();
+            //DisplayMap();
             Console.ReadLine();
         }
         static void LauncherManager()
@@ -43,18 +50,44 @@ namespace First_Playable_Map
             playerHealth = playerHP;
             enemy1basicHP = 25;
             enemy2tankHP = 50;
-
+            path = path1;
+            ReadMapFromFile(path1);
         }
-
-        public static void DisplayMap()
+        //Map Spawns
+        static void DisplayMap()
         {
-          Console.SetCursorPosition(0, 0);
-          for (int i = 0; i < mapHeight; i++)
+            Console.SetCursorPosition(0, 0);
+            for (int i = 0; i < mapHeight; i++)
             {
                 for (int j = 0; j < mapWidth; j++)
                 {
-                    char tile = mapText[i,j];
-                    DrawTile
+                    char tile = mapText[i, j];
+                    DrawMap(tile);
+                    if (tile == '-')
+                    {
+                        playerX = i;
+                        playerY = j;
+                        mapText[i, j] = '#';
+                    }
+                }
+                Console.WriteLine(); // Add this line to move to the next line after each row.
+            }
+        }
+
+
+        static void ReadMapFromFile(string path)
+        {
+            string[] lines = File.ReadAllLines(path);
+            mapHeight = lines.Length;
+            mapWidth = lines[0].Length;
+
+            mapText = new char[mapHeight, mapWidth];
+
+            for (int i = 0; i < mapHeight; i++)
+            {
+                for (int j = 0; j < mapWidth; j++)
+                {
+                    mapText[i, j] = lines[i][j];
                 }
             }
         }
@@ -63,13 +96,25 @@ namespace First_Playable_Map
         {
             if (tile == '-')
             {
-
+                MakeFloor();
+                return;
             }
+            if (tile == '#')
+            {
+                MakeWall();
+                return;
+            }
+        }
+
+        static void PlayerXY()
+        {
+            Console.SetCursorPosition(playerX, playerY);
         }
 
         static void LegendMap()
         {
-            Console.Write("Floor = " )
+            Console.Write("Floor = #");
+            MakeWall();
         }
 
         static void HUDMap() 
@@ -77,11 +122,27 @@ namespace First_Playable_Map
             Console.WriteLine(string.Format("HP:{0} Damage{1}",playerHP,playerDamage));
         }
 
+        static void MakeWall()
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(mapWalls);
+            Console.ResetColor();
+        }
+        static void MakeFloor()
+        {
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write(mapGround);
+            Console.ResetColor();
+        }
+
+        
+
         static void PlayerCharacter(ConsoleKeyInfo keyInfo)
         {
+            //Player postison
             int newPlayerX = playerX;
             int newPlayerY = playerY;
-
+            //Player Controls
             switch (keyInfo.Key)
             {
                 case ConsoleKey.W:
@@ -101,7 +162,7 @@ namespace First_Playable_Map
                     newPlayerX = playerX + 1;
                     break;
                 case ConsoleKey.Spacebar:
-                    if (IsAdjacent(playerX, playerY, enemyX, enemyY))
+                    if (IsAdjacent(playerX, playerY, enemy1X, enemy1Y))
                     {
                         PlayerDamage();
                     }
@@ -110,6 +171,40 @@ namespace First_Playable_Map
             }
         }
 
+        //Testing Enemy AI (Might removed)
+        static void MoveEnemy()
+        {
+            int newEnemyX = enemy1X;
+            int newEnemyY = enemy1Y;
+
+            if (playerX < enemy1X && IsWithinBounds(enemy1Y, enemy1X - 1) && mapText[enemy1Y, enemy1X - 1] == '`')
+                newEnemyX = enemy1X - 1;
+            else if (playerX > enemy1X && IsWithinBounds(enemy1Y, enemy1X + 1) && mapText[enemy1Y, enemy1X + 1] == '`')
+                newEnemyX = enemy1X + 1;
+
+            if (playerY < enemy1Y && IsWithinBounds(enemy1Y - 1, enemy1X) && mapText[enemy1Y - 1, enemy1X] == '`')
+                newEnemyY = enemy1Y - 1;
+            else if (playerY > enemy1Y && IsWithinBounds(enemy1Y + 1, enemy1X) && mapText[enemy1Y + 1, enemy1X] == '`')
+                newEnemyY = enemy1Y + 1;
+
+            if (IsWithinBounds(newEnemyY, newEnemyX) && mapText[newEnemyY, newEnemyX] == '`')
+            {
+                mapText[enemy1Y, enemy1X] = '`';
+                enemy1X = newEnemyX;
+                enemy1Y = newEnemyY;
+                mapText[enemy1Y, enemy1X] = '$';
+            }
+        }
+        //Testing player and enemy pos
+        static bool IsAdjacent(int x1, int y1, int x2, int y2)
+        {
+            return Math.Abs(x1 - x2) == 1 && y1 == y2 || Math.Abs(y1 - y2) == 1 && x1 == x2;
+        }
+        //Testing borders (Might remove)
+        static bool IsWithinBounds(int y, int x)
+        {
+            return y >= 0 && y < mapText.GetLength(0) && x >= 0 && x < mapText.GetLength(1);
+        }
         static void PlayerDamage()
         {
             //Player Damage
