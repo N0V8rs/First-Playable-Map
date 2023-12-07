@@ -51,7 +51,7 @@ namespace First_Playable_Map
             enemy1basicHP = 25;
             enemy2tankHP = 50;
             path = path1;
-            ReadMapFromFile(path1);
+            //ReadMapFromFile(path1);
         }
         //Map Spawns
         static void DisplayMap()
@@ -75,11 +75,11 @@ namespace First_Playable_Map
         }
 
 
-        static void ReadMapFromFile(string path)
+        static void ReadMapFromFile()
         {
             string[] lines = File.ReadAllLines(path);
-            mapHeight = lines.Length;
-            mapWidth = lines[0].Length;
+            mapHeight = lines[0].Length;
+            mapWidth = lines[1].Length;
 
             mapText = new char[mapHeight, mapWidth];
 
